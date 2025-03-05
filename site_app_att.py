@@ -86,6 +86,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings#type:ignore
 from langchain_openai.llms import OpenAI#type:ignore
 from langchain.chains.retrieval_qa.base import RetrievalQA#type:ignore
 from langchain_community.document_loaders import TextLoader
+from langchain_community.vectorstores import FAISS
 
 dotenv.load_dotenv()
 
@@ -137,7 +138,8 @@ class PdfLoader(FileLoader):
 
         embedding = HuggingFaceEmbeddings()
 
-        vector_db = Chroma.from_documents(documents=self.splitting_text(),embedding=embedding)
+        vector_db = FAISS.from_documents(documents=self.splitting_text(), embedding=embedding)
+
 
         return vector_db
 
@@ -188,7 +190,8 @@ class TxtLoader(FileLoader):
 
         embedding = HuggingFaceEmbeddings()
 
-        vector_db = Chroma.from_documents(documents=self.splitting_text(),embedding=embedding)
+        vector_db = FAISS.from_documents(documents=self.splitting_text(), embedding=embedding)
+
 
         return vector_db
 
