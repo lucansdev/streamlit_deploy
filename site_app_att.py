@@ -12,7 +12,7 @@ def process_input(uploaded_files):
     
     # Processar arquivos
     for file in uploaded_files:
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
             temp_file.write(file.read())
             temp_file.flush()
             loader = FactoryLoader()
@@ -81,12 +81,12 @@ import os
 import dotenv
 from langchain_community.document_loaders.pdf import PyPDFLoader#type:ignore
 from langchain_text_splitters import RecursiveCharacterTextSplitter#type:ignore
-from langchain_community.vectorstores.chroma import Chroma#type:ignore
 from langchain_community.embeddings import HuggingFaceEmbeddings#type:ignore
-from langchain_openai.llms import OpenAI#type:ignore
+from langchain_openai.llms import OpenAI
 from langchain.chains.retrieval_qa.base import RetrievalQA#type:ignore
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
+from langchain.prompts import PromptTemplate
 
 dotenv.load_dotenv()
 
@@ -147,20 +147,30 @@ class PdfLoader(FileLoader):
 
     def call_ai(self):
 
+        RAG_PROMPT_TEMPLATE = """Use o contexto abaixo **E** seu conhecimento geral para responder:
+        
+        {context}
+        
+        Pergunta: {question}
+
+        Caso a questão não seja baseada no contexto, utilize seus conhecimento gerais para responder a pergunta do usuário.
+
+        Resposta (seja natural e combine informações quando necessário):"""
+
+        rag_prompt = PromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
+
         vector = self.embedding_vector_store()
         
-        llm = OpenAI(api_key=st.secrets["openaiKey"])
+        llm = OpenAI(api_key=os.getenv("openaiKey"))
         retriever = RetrievalQA.from_chain_type(
             llm=llm,
             retriever=vector.as_retriever(search_type="mmr"),
-            chain_type="refine",
+            chain_type="stuff",
+            chain_type_kwargs={"prompt":rag_prompt},
             verbose=True
         )
             
-        
-
         return retriever
-        
 
 class TxtLoader(FileLoader):
     def __init__(self,arquivos):
@@ -199,17 +209,29 @@ class TxtLoader(FileLoader):
     
     def call_ai(self):
 
+        RAG_PROMPT_TEMPLATE = """Use o contexto abaixo **E** seu conhecimento geral para responder:
+        
+        {context}
+        
+        Pergunta: {question}
+
+        Caso a questão não seja baseada no contexto, utilize seus conhecimento gerais para responder a pergunta do usuário.
+
+        Resposta (seja natural e combine informações quando necessário):"""
+
+        rag_prompt = PromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
+
         vector = self.embedding_vector_store()
         
-        llm = OpenAI(api_key=st.secrets["openaiKey"])
+        llm = OpenAI(api_key=os.getenv("openaiKey"))
         retriever = RetrievalQA.from_chain_type(
             llm=llm,
             retriever=vector.as_retriever(search_type="mmr"),
-            chain_type="refine",
+            chain_type="stuff",
+            chain_type_kwargs={"prompt":rag_prompt},
             verbose=True
         )
             
-        
         return retriever
     
 
